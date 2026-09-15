@@ -65,7 +65,7 @@ export default function AdminSponsorsPage() {
 
           <div className="rounded-2xl bg-beige-light border border-beige-dark p-5 mb-10">
             <p className="flex items-center gap-2 text-sm font-semibold text-maroon-600 mb-3">
-              <Percent className="h-4 w-4" /> Discount applied automatically at checkout, by who's signed in
+              <Percent className="h-4 w-4" /> Discount applied automatically at checkout, by who&apos;s signed in
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {sponsorshipDiscountTiers.map((tier) => (

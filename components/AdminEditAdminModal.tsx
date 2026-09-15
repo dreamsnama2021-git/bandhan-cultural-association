@@ -42,7 +42,7 @@ export default function AdminEditAdminModal({
     <Modal open={open} onClose={onClose} title="Edit Admin">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <p className="text-xs text-charcoal-light">
-          This updates how the Admin's name and contact email are shown across the panel. The Admin login itself
+          This updates how the Admin&apos;s name and contact email are shown across the panel. The Admin login itself
           stays fixed.
         </p>
         <div>

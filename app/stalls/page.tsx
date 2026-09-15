@@ -329,7 +329,7 @@ export default function StallsPage() {
                 <h3 className="font-display text-xl font-semibold text-maroon-500 mb-2">Request Submitted</h3>
                 <p className="text-sm text-charcoal-light">
                   Your request for Stall {activeStall.code} ({stallDurationLabels[duration]}) has been sent to the
-                  association's admin team for confirmation. Once approved, you can complete the payment from the
+                  association&apos;s admin team for confirmation. Once approved, you can complete the payment from the
                   &ldquo;My Stall Requests&rdquo; section below using {form.email}.
                 </p>
                 <button

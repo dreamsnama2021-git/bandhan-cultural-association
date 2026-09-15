@@ -68,7 +68,7 @@ export default function BhogDayPage({ params }: { params: { dayNumber: string } 
               <Lock className="h-8 w-8 text-charcoal-light mx-auto" />
               <p className="mt-4 font-display text-xl font-semibold text-maroon-500">Not unlocked yet</p>
               <p className="mt-2 text-sm text-charcoal-light">
-                This day's Bhog coupon will be available from the morning of {formatDate(day.date)}. Come back then.
+                This day&apos;s Bhog coupon will be available from the morning of {formatDate(day.date)}. Come back then.
               </p>
             </div>
           )}
@@ -78,7 +78,7 @@ export default function BhogDayPage({ params }: { params: { dayNumber: string } 
               <Soup className="h-8 w-8 text-charcoal-light mx-auto" />
               <p className="mt-4 font-display text-xl font-semibold text-maroon-500">Coupon coming soon</p>
               <p className="mt-2 text-sm text-charcoal-light">
-                The admin hasn't generated a Bhog coupon for this day yet. Please check back shortly.
+                The admin hasn&apos;t generated a Bhog coupon for this day yet. Please check back shortly.
               </p>
             </div>
           )}
