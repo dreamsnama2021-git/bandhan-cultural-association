@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #fbf6ec;
+  --foreground: #2a2320;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-body), sans-serif;
+}
+
+::selection {
+  background: #d89a2b;
+  color: #fbf6ec;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .container-px {
+    @apply px-5 sm:px-8 lg:px-12;
+  }
+
+  .section-py {
+    @apply py-14 sm:py-20 lg:py-24;
+  }
+
+  .motif-dots {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(107, 18, 32, 0.14) 1px,
+      transparent 0
+    );
+    background-size: 18px 18px;
+  }
+
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-saffron-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream;
+  }
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display), serif;
+  }
+}
+
+/* Custom scrollbar for a slightly more premium feel */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f5ebd6;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9a227;
+  border-radius: 999px;
+}
