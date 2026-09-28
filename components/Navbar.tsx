@@ -94,13 +94,13 @@ export default function Navbar() {
           <img
             src="/logo.webp"
             alt="Bandhan Cultural Association"
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover shrink-0"
+            className="h-11 w-11 sm:h-14 sm:w-14 rounded-full object-cover shrink-0"
           />
-          <span className="hidden sm:flex flex-col leading-none">
-            <span className="font-display font-semibold text-lg text-maroon-500 tracking-wide">
+          <span className="hidden sm:flex items-baseline gap-2.5 leading-none whitespace-nowrap">
+            <span className="font-display font-semibold text-xl text-maroon-500 tracking-wide">
               Bandhan
             </span>
-            <span className="text-[10px] uppercase tracking-[0.25em] text-saffron-700 font-semibold">
+            <span className="text-[11px] uppercase tracking-[0.25em] text-saffron-700 font-semibold">
               Cultural Association
             </span>
           </span>
