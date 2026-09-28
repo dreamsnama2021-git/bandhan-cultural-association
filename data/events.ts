@@ -4,7 +4,7 @@ export const events: EventItem[] = [
   {
     id: "evt-durga-puja-2026",
     slug: "durga-puja-2026",
-    name: "Durga Puja Celebrations",
+    name: "Surojit & Bondhura Band Event",
     category: "durga-puja",
     date: "2026-10-17",
     endDate: "2026-10-20",
