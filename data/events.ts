@@ -13,7 +13,7 @@ export const events: EventItem[] = [
     description:
       "Four days of pandal hopping, cultural evenings, community feasting and the grand sindoor khela on Dashami. Our biggest celebration of the year.",
     image: "durga",
-    ticketPriceFrom: 100,
+    ticketPriceFrom: 500,
     seatsAvailable: 420,
     featured: true,
   },
@@ -90,11 +90,6 @@ export const events: EventItem[] = [
 ];
 
 export const ticketTypesByEvent: Record<string, TicketTypeOption[]> = {
-  "evt-durga-puja-2026": [
-    { id: "general", name: "General Entry", price: 100, description: "Access to all four days of the celebration.", perks: ["Pandal entry", "Cultural program seating (open)"] },
-    { id: "family-pass", name: "Family Pass (4)", price: 320, description: "Discounted entry for a family of four.", perks: ["Pandal entry for 4", "Reserved family seating"] },
-    { id: "vip", name: "VIP Pass", price: 500, description: "Priority entry and reserved seating for cultural evenings.", perks: ["Priority pandal entry", "Reserved front seating", "Complimentary prasad box"] },
-  ],
   "evt-cultural-evening-oct": [
     { id: "general", name: "General Seating", price: 150, description: "Open seating for the full evening program.", perks: ["Full program access"] },
     { id: "premium", name: "Premium Seating", price: 300, description: "Reserved seats closer to the stage.", perks: ["Reserved seating", "Complimentary refreshments"] },
