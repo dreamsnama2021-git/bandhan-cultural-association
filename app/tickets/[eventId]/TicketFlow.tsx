@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Gift, Minus, Plus } from "lucide-react";
 import Container from "@/components/Container";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
@@ -10,7 +10,9 @@ import TicketCard from "@/components/TicketCard";
 import Checkout from "@/components/Checkout";
 import Confirmation from "@/components/Confirmation";
 import Button from "@/components/Button";
-import { formatDate, isValidEmail, isValidMobile } from "@/lib/utils";
+import { formatCurrency, formatDate, generateOrderId, generateTransactionId, isValidEmail, isValidMobile } from "@/lib/utils";
+import { getCurrentSessionMember, type StoredCredential } from "@/lib/credentials";
+import { addTicketBooking, freeTicketAllowance, freeTicketsUsed } from "@/lib/ticketBookings";
 import { ticketTypesByEvent } from "@/data/events";
 import type { EventItem, PaymentResult, TicketTypeOption } from "@/types";
 
@@ -38,8 +40,50 @@ export default function TicketFlow({ event }: { event: EventItem }) {
   const [errors, setErrors] = useState<Partial<Record<"name" | "phone" | "email", string>>>({});
   const [result, setResult] = useState<PaymentResult | null>(null);
 
+  const [session, setSession] = useState<StoredCredential | null>(null);
+  const [freeRemaining, setFreeRemaining] = useState(0);
+
+  // A signed-in member gets 1 free ticket + 1 per family member (per event).
+  useEffect(() => {
+    const current = getCurrentSessionMember();
+    if (!current) return;
+    setSession(current);
+    setCustomer({ name: current.member.fullName, phone: current.member.mobile, email: current.email });
+    const allowance = freeTicketAllowance(current.familyMembers.length);
+    setFreeRemaining(Math.max(0, allowance - freeTicketsUsed(current.email, event.id)));
+  }, [event.id]);
+
   const selectedType = ticketTypes.find((t) => t.id === ticketTypeId)!;
-  const totalPrice = selectedType.price * quantity;
+  const freeQty = Math.min(quantity, freeRemaining);
+  const paidQty = quantity - freeQty;
+  const totalPrice = selectedType.price * paidQty;
+  const maxQuantity = freeRemaining + 10;
+
+  const handleComplete = (res: PaymentResult) => {
+    if (session) {
+      addTicketBooking({
+        memberEmail: session.email,
+        eventId: event.id,
+        ticketTypeName: selectedType.name,
+        freeQuantity: freeQty,
+        paidQuantity: paidQty,
+        amount: res.amount,
+        orderId: res.orderId,
+      });
+    }
+    setResult(res);
+    setStep(4);
+  };
+
+  const confirmFreeTickets = () =>
+    handleComplete({
+      orderId: generateOrderId(),
+      transactionId: generateTransactionId(),
+      date: new Date().toISOString(),
+      amount: 0,
+      status: "success",
+      method: "free",
+    });
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -81,6 +125,25 @@ export default function TicketFlow({ event }: { event: EventItem }) {
             {step === 1 && (
               <div>
                 <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-6">Select quantity</h2>
+                {session ? (
+                  <div className="mb-5 flex items-start gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-900">
+                    <Gift className="h-5 w-5 mt-0.5 shrink-0" />
+                    <p>
+                      Members get <strong>1 free ticket for themselves + 1 for each family member</strong> (you have{" "}
+                      {session.familyMembers.length} family member{session.familyMembers.length === 1 ? "" : "s"}).{" "}
+                      {freeRemaining > 0 ? (
+                        <>You have <strong>{freeRemaining} free ticket{freeRemaining === 1 ? "" : "s"}</strong> left for this event. Any extra tickets are paid.</>
+                      ) : (
+                        <>You have used all your free tickets for this event. Extra tickets are paid.</>
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mb-5 text-sm text-charcoal-light">
+                    Members get free tickets for themselves and their family members.{" "}
+                    <a href="/login" className="font-semibold text-maroon-600 underline">Log in</a> to claim them.
+                  </p>
+                )}
                 <div className="flex items-center gap-5 rounded-2xl bg-white/70 border border-maroon-500/10 p-6 max-w-xs">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -91,13 +154,23 @@ export default function TicketFlow({ event }: { event: EventItem }) {
                   </button>
                   <span className="font-display text-2xl font-bold text-charcoal w-8 text-center">{quantity}</span>
                   <button
-                    onClick={() => setQuantity((q) => Math.min(10, q + 1))}
+                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-beige-light hover:bg-beige-dark focus-ring"
                     aria-label="Increase quantity"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
+                {session && (
+                  <div className="mt-4 max-w-xs text-sm text-charcoal-light space-y-1">
+                    <p>Free tickets: <strong className="text-emerald-700">{freeQty}</strong></p>
+                    <p>
+                      Paid tickets: <strong className="text-charcoal">{paidQty}</strong>
+                      {paidQty > 0 && <> &times; {formatCurrency(selectedType.price)}</>}
+                    </p>
+                    <p>Total: <strong className="text-maroon-500">{formatCurrency(totalPrice)}</strong></p>
+                  </div>
+                )}
                 <div className="mt-8 flex gap-3">
                   <Button variant="ghost" onClick={() => setStep(0)}>Back</Button>
                   <Button onClick={() => setStep(2)}>Continue</Button>
@@ -135,17 +208,32 @@ export default function TicketFlow({ event }: { event: EventItem }) {
             {step === 3 && (
               <div>
                 <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-6">Complete your purchase</h2>
-                <Checkout
-                  summary={{
-                    itemLabel: `${event.name} — ${selectedType.name}`,
-                    itemDescription: `${quantity} ticket(s) · ${customer.name}`,
-                    price: totalPrice,
-                  }}
-                  onComplete={(res) => {
-                    setResult(res);
-                    setStep(4);
-                  }}
-                />
+                {totalPrice === 0 ? (
+                  <div className="rounded-2xl bg-beige-light border border-beige-dark p-6 max-w-md">
+                    <h3 className="font-display text-lg font-semibold text-maroon-500 mb-3">Free Tickets</h3>
+                    <p className="text-sm text-charcoal-light">
+                      {event.name} — {selectedType.name}
+                    </p>
+                    <p className="mt-1 text-sm text-charcoal-light">{quantity} free ticket(s) · {customer.name}</p>
+                    <p className="mt-4 font-display text-2xl font-bold text-maroon-500">{formatCurrency(0)}</p>
+                    <div className="mt-6 flex gap-3">
+                      <Button type="button" variant="ghost" onClick={() => setStep(2)}>Back</Button>
+                      <Button onClick={confirmFreeTickets}>Confirm Free Tickets</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Checkout
+                    summary={{
+                      itemLabel: `${event.name} — ${selectedType.name}`,
+                      itemDescription:
+                        freeQty > 0
+                          ? `${quantity} ticket(s): ${freeQty} free + ${paidQty} paid · ${customer.name}`
+                          : `${quantity} ticket(s) · ${customer.name}`,
+                      price: totalPrice,
+                    }}
+                    onComplete={handleComplete}
+                  />
+                )}
               </div>
             )}
 
@@ -153,7 +241,7 @@ export default function TicketFlow({ event }: { event: EventItem }) {
               <Confirmation
                 result={result}
                 title="Tickets Confirmed"
-                message={`${quantity} ticket(s) for ${event.name} have been booked. A confirmation has been sent to ${customer.email}.`}
+                message={`${quantity} ticket(s) for ${event.name} have been booked${freeQty > 0 ? ` (${freeQty} free, ${paidQty} paid)` : ""}. A confirmation has been sent to ${customer.email}.`}
               />
             )}
           </div>

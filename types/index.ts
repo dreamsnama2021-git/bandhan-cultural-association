@@ -261,7 +261,7 @@ export interface PaymentResult {
   date: string;
   amount: number;
   status: "success";
-  method: PaymentMethod;
+  method: PaymentMethod | "free";
 }
 
 export interface Booking {
