@@ -72,6 +72,7 @@ export default function TicketFlow({ event }: { event: EventItem }) {
       id: MEMBER_FREE_ID,
       name: "Registered Member",
       price: 0,
+      priceLabel: "Free",
       description: `Free tickets for you${family > 0 ? ` + ${family} family member${family === 1 ? "" : "s"}` : ""}. No payment needed.`,
       perks: [`${freeRemaining} free ticket${freeRemaining === 1 ? "" : "s"}`, "Event entry"],
     };

@@ -184,6 +184,8 @@ export interface TicketTypeOption {
   id: string;
   name: string;
   price: number;
+  // Shown instead of the formatted price (e.g. "Free" for the member benefit card).
+  priceLabel?: string;
   description: string;
   perks: string[];
 }
