@@ -9,6 +9,6 @@
     "binding": "ASSETS"
   },
   "build": {
-    "command": "npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion"
+    "command": "npx opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion --openNextConfigPath cloudflare/open-next.config.ts"
   }
 }
