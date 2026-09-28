@@ -13,7 +13,7 @@ export default function MembershipCard({ member }: { member: Member }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const canvas = document.createElement("canvas");
     const width = 900;
     const height = 540;
@@ -35,16 +35,22 @@ export default function MembershipCard({ member }: { member: Member }) {
     ctx.arc(width - 60, 60, 140, 0, Math.PI * 2);
     ctx.fill();
 
-    // logo circle
-    ctx.fillStyle = "#D89A2B";
-    ctx.beginPath();
-    ctx.arc(80, 70, 34, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#450B14";
-    ctx.font = "bold 32px Georgia";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("B", 80, 74);
+    // logo image, clipped to a circle
+    const logo = new Image();
+    logo.src = "/logo.webp";
+    await new Promise<void>((resolve) => {
+      logo.onload = () => resolve();
+      logo.onerror = () => resolve();
+    });
+    if (logo.complete && logo.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(80, 70, 34, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(logo, 80 - 34, 70 - 34, 68, 68);
+      ctx.restore();
+    }
 
     ctx.textAlign = "left";
     ctx.fillStyle = "#FBF6EC";
@@ -118,9 +124,11 @@ export default function MembershipCard({ member }: { member: Member }) {
       >
         <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-saffron-400/20" aria-hidden="true" />
         <div className="relative flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-saffron-500 text-maroon-700 font-display font-bold text-lg">
-            B
-          </span>
+          <img
+            src="/logo.webp"
+            alt="Bandhan Cultural Association"
+            className="h-10 w-10 rounded-full object-cover shrink-0"
+          />
           <div>
             <p className="font-display font-semibold leading-tight">Bandhan Cultural Association</p>
             <p className="text-[10px] tracking-[0.25em] text-saffron-300 font-semibold">

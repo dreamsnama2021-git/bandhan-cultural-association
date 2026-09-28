@@ -22,7 +22,7 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
       />
       <section className="section-py">
         <Container>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
             <DashboardCard
               href="/profile"
               icon="UserCircle2"
@@ -30,7 +30,7 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
               description="Manage your personal and membership details."
               cta="View Profile"
               featured
-              className="col-span-2 lg:col-span-3"
+              className="sm:col-span-2 lg:col-span-3"
               index={0}
             />
             <DashboardCard
@@ -39,6 +39,7 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
               title="Business Sponsor"
               description="Promote your business through the association's festival ecosystem."
               cta="Sponsor as a Business"
+              className="sm:col-span-2 lg:col-span-3"
               index={1}
             />
             <DashboardCard
@@ -47,6 +48,7 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
               title="Stall Space"
               description="Reserve a stall and connect with visitors during the celebration."
               cta="Book a Stall"
+              className="lg:col-span-2"
               index={2}
             />
             <DashboardCard
@@ -55,14 +57,16 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
               title="Individual Sponsor"
               description="Support the celebration as an individual contributor."
               cta="Contribute"
+              className="lg:col-span-2"
               index={3}
             />
             <DashboardCard
               href={`/tickets?puja=${puja.id}`}
               icon="Ticket"
-              title="Buy Tickets"
+              title="Tickets"
               description={`Get access to upcoming ${puja.name} events.`}
               cta="Browse Tickets"
+              className="lg:col-span-2"
               index={4}
             />
             <DashboardCard
@@ -71,6 +75,7 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
               title="Pooja Calendar"
               description={`Explore ${puja.name} dates and reserve your participation.`}
               cta="View Calendar"
+              className="lg:col-span-2"
               index={5}
             />
             <DashboardCard
@@ -79,6 +84,7 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
               title="View Images"
               description={`Photos from previous years' ${puja.name} celebrations.`}
               cta="View Gallery"
+              className="lg:col-span-2"
               index={6}
             />
             <DashboardCard
@@ -87,7 +93,7 @@ export default function PujaDashboardPage({ params }: { params: { pujaId: string
               title="Bhog"
               description="Pick a Navratri day to see your family's Bhog coupons."
               cta="View Navratri Days"
-              className="col-span-2 lg:col-span-3"
+              className="lg:col-span-2"
               index={7}
             />
           </div>

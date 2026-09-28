@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import { ToastProvider } from "@/components/Toast";
+import SupabaseSessionSync from "@/components/SupabaseSessionSync";
 
 const display = Cormorant_Garamond({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
         className={`${display.variable} ${body.variable} bg-cream text-charcoal antialiased font-body overflow-hidden`}
       >
         <ToastProvider>
+          <SupabaseSessionSync />
           <div className="flex h-[100dvh] flex-col overflow-hidden bg-cream">
             <Navbar />
             <div className="flex-1 overflow-y-auto overscroll-contain">

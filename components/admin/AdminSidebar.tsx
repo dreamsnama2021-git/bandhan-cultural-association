@@ -2,15 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Building2, Store, Ticket, Tag, Soup, ArrowLeft, X } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Store,
+  HeartHandshake,
+  Ticket,
+  CalendarDays,
+  Images,
+  Tag,
+  Soup,
+  ArrowLeft,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/members", label: "Members", icon: Users },
-  { href: "/admin/sponsors", label: "Sponsors", icon: Building2 },
-  { href: "/admin/stalls", label: "Stall Bookings", icon: Store },
-  { href: "/admin/events", label: "Events & Tickets", icon: Ticket },
+  { href: "/admin/sponsors", label: "Business Sponsors", icon: Building2, exact: true },
+  { href: "/admin/stalls", label: "Stalls", icon: Store },
+  { href: "/admin/sponsors/individual", label: "Individual Sponsors", icon: HeartHandshake },
+  { href: "/admin/tickets", label: "Tickets", icon: Ticket },
+  { href: "/admin/calendar", label: "Pooja Calendar", icon: CalendarDays },
+  { href: "/admin/images", label: "View Images", icon: Images },
   { href: "/admin/coupons", label: "Coupons", icon: Tag },
   { href: "/admin/bhog", label: "Bhog Coupons", icon: Soup },
 ];
@@ -21,9 +37,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5 px-6 py-6 focus-ring rounded-lg">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-maroon-500 text-cream font-display font-bold text-lg shrink-0">
-          B
-        </span>
+        <img
+          src="/logo.webp"
+          alt="Bandhan Cultural Association"
+          className="h-10 w-10 rounded-full object-cover shrink-0"
+        />
         <span className="flex flex-col leading-none">
           <span className="font-display font-semibold text-lg text-maroon-500 tracking-wide">Bandhan</span>
           <span className="text-[9px] uppercase tracking-[0.2em] text-saffron-700 font-semibold">

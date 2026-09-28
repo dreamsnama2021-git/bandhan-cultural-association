@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, Search, ChevronDown, LogOut } from "lucide-react";
-import { clearAdminSession, clearSession } from "@/lib/credentials";
+import { Menu, Search, ChevronDown, LayoutDashboard, Building2, HeartHandshake, Store, Ticket, LogOut } from "lucide-react";
+import { clearAdminSession } from "@/lib/credentials";
+import { signOutMember } from "@/lib/memberAuth";
 import { AdminSidebarDrawer } from "@/components/admin/AdminSidebar";
 import { useAdminIdentity } from "@/components/admin/AdminAccessContext";
 
@@ -25,11 +27,11 @@ export default function AdminHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (identity.isTrueAdmin) {
       clearAdminSession();
     } else {
-      clearSession();
+      await signOutMember();
     }
     setProfileOpen(false);
     router.push("/login");
@@ -80,9 +82,59 @@ export default function AdminHeader() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-44 rounded-xl bg-cream border border-maroon-500/10 shadow-card-hover overflow-hidden py-1.5"
+                  className="absolute right-0 mt-2 w-56 rounded-xl bg-cream border border-maroon-500/10 shadow-card-hover overflow-hidden py-1.5"
                   role="menu"
                 >
+                  {!identity.isTrueAdmin && (
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-charcoal hover:bg-maroon-50"
+                      role="menuitem"
+                    >
+                      <LayoutDashboard className="h-4 w-4" /> My Dashboard
+                    </Link>
+                  )}
+                  {identity.isTrueAdmin && (
+                    <>
+                      <p className="px-4 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-charcoal-light">
+                        Participate as Admin
+                      </p>
+                      <Link
+                        href="/sponsorship/business"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-charcoal hover:bg-maroon-50"
+                        role="menuitem"
+                      >
+                        <Building2 className="h-4 w-4" /> Business Sponsor
+                      </Link>
+                      <Link
+                        href="/sponsorship/individual"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-charcoal hover:bg-maroon-50"
+                        role="menuitem"
+                      >
+                        <HeartHandshake className="h-4 w-4" /> Individual Sponsor
+                      </Link>
+                      <Link
+                        href="/stalls"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-charcoal hover:bg-maroon-50"
+                        role="menuitem"
+                      >
+                        <Store className="h-4 w-4" /> Book a Stall
+                      </Link>
+                      <Link
+                        href="/tickets"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-charcoal hover:bg-maroon-50"
+                        role="menuitem"
+                      >
+                        <Ticket className="h-4 w-4" /> Buy Tickets
+                      </Link>
+                      <div className="my-1 border-t border-maroon-500/10" />
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={handleLogout}

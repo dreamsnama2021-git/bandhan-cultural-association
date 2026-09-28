@@ -7,9 +7,11 @@ export default function HomePage() {
     <section className="flex min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] items-center bg-cream motif-dots">
       <Container className="w-full">
         <div className="mx-auto max-w-sm text-center">
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-maroon-500 text-cream font-display font-bold text-2xl shadow-card">
-            B
-          </span>
+          <img
+            src="/logo.webp"
+            alt="Bandhan Cultural Association"
+            className="mx-auto h-16 w-16 rounded-full object-cover shadow-card"
+          />
           <h1 className="mt-5 font-display text-3xl font-semibold text-maroon-500">
             Bandhan Cultural Association
           </h1>

@@ -1,36 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Pencil, Trash2, Percent, Download, Plus, Star } from "lucide-react";
+import { User, Pencil, Trash2, Download, Plus } from "lucide-react";
 import Container from "@/components/Container";
 import AdminTopBar from "@/components/AdminTopBar";
 import AdminEditSponsorModal from "@/components/AdminEditSponsorModal";
-import AdminSponsorshipPackageModal from "@/components/AdminSponsorshipPackageModal";
+import AdminIndividualSponsorshipItemModal from "@/components/AdminIndividualSponsorshipItemModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useAdminData } from "@/components/AdminDataContext";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { downloadCsv } from "@/lib/csv";
-import { sponsorshipDiscountTiers } from "@/lib/discounts";
-import type { Sponsor, SponsorshipPackageTier } from "@/types";
+import type { IndividualSponsorshipCategory, IndividualSponsorshipItem, Sponsor } from "@/types";
 
-export default function AdminSponsorsPage() {
+const categoryTabs: { id: IndividualSponsorshipCategory | "all"; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "puja", label: "Puja" },
+  { id: "mahabhog", label: "Mahabhog" },
+];
+
+export default function AdminIndividualSponsorsPage() {
   const {
-    sponsors: allSponsors,
+    sponsors,
     deleteSponsor,
-    sponsorshipPackages,
-    deleteSponsorshipPackage,
+    individualSponsorshipItems,
+    deleteIndividualSponsorshipItem,
   } = useAdminData();
-  const sponsors = allSponsors.filter((s) => s.type === "business");
+  const individualSponsors = sponsors.filter((s) => s.type === "individual");
   const [editing, setEditing] = useState<Sponsor | null>(null);
   const [deleting, setDeleting] = useState<Sponsor | null>(null);
 
-  const [addingPackage, setAddingPackage] = useState(false);
-  const [editingPackage, setEditingPackage] = useState<SponsorshipPackageTier | null>(null);
-  const [deletingPackage, setDeletingPackage] = useState<SponsorshipPackageTier | null>(null);
+  const [filter, setFilter] = useState<IndividualSponsorshipCategory | "all">("all");
+  const [addingItem, setAddingItem] = useState(false);
+  const [editingItem, setEditingItem] = useState<IndividualSponsorshipItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<IndividualSponsorshipItem | null>(null);
 
-  const packageName = (packageId?: string) => {
-    if (!packageId) return "—";
-    return sponsorshipPackages.find((p) => p.id === packageId)?.name ?? packageId;
+  const visibleItems = filter === "all" ? individualSponsorshipItems : individualSponsorshipItems.filter((i) => i.category === filter);
+
+  const itemLabel = (itemId?: string) => {
+    if (!itemId) return "—";
+    const item = individualSponsorshipItems.find((i) => i.id === itemId);
+    return item ? `${item.name} (${item.day})` : itemId;
   };
 
   const confirmDelete = () => {
@@ -38,66 +47,76 @@ export default function AdminSponsorsPage() {
     setDeleting(null);
   };
 
-  const confirmDeletePackage = () => {
-    if (deletingPackage) deleteSponsorshipPackage(deletingPackage.id);
-    setDeletingPackage(null);
+  const confirmDeleteItem = () => {
+    if (deletingItem) deleteIndividualSponsorshipItem(deletingItem.id);
+    setDeletingItem(null);
   };
 
   const handleDownload = () => {
-    const headers = ["Name", "Email", "Category", "Package", "MRP", "Discount", "Final Price", "Status", "Date"];
-    const rows = sponsors.map((s) => [
+    const headers = ["Name", "Email", "Phone", "Sponsorship", "Amount", "Status", "Date"];
+    const rows = individualSponsors.map((s) => [
       s.name,
       s.contactEmail,
-      s.category ?? "—",
-      packageName(s.packageId),
-      s.mrp ? formatCurrency(s.mrp) : "—",
-      s.discountPercent ? `${s.discountPercent}%` : "—",
+      s.contactPhone,
+      itemLabel(s.packageId),
       formatCurrency(s.amount),
       s.status.toUpperCase(),
       formatDate(s.createdOn),
     ]);
-    downloadCsv("business-sponsorships.csv", headers, rows);
+    downloadCsv("individual-sponsorships.csv", headers, rows);
   };
 
   return (
     <>
-      <AdminTopBar title="Business Sponsors" description="Business sponsorships received by the association." />
+      <AdminTopBar title="Individual Sponsors" description="Individual contributions received by the association." />
       <section className="section-py">
         <Container>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-semibold text-maroon-500">
-              Business Sponsorship — Core Spaces Rate Card
+              Individual Sponsorship — Puja &amp; Mahabhog Rate Card
             </h2>
             <button
               type="button"
-              onClick={() => setAddingPackage(true)}
+              onClick={() => setAddingItem(true)}
               className="inline-flex items-center gap-1.5 rounded-full bg-maroon-500 text-cream text-sm font-semibold px-4 py-2 focus-ring"
             >
-              <Plus className="h-4 w-4" /> Add Package
+              <Plus className="h-4 w-4" /> Add Item
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {sponsorshipPackages.map((p) => (
-              <div key={p.id} className="relative rounded-2xl bg-white/70 border border-maroon-500/10 p-5">
-                {p.recommended && (
-                  <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-saffron-100 text-saffron-700 text-[10px] font-semibold px-2 py-0.5">
-                    <Star className="h-3 w-3" /> Most Popular
-                  </span>
+
+          <div className="flex gap-2 mb-4">
+            {categoryTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFilter(tab.id)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-sm font-semibold transition-colors focus-ring",
+                  filter === tab.id ? "bg-maroon-500 text-cream" : "bg-white/70 text-charcoal hover:bg-maroon-50"
                 )}
-                <p className="font-display text-lg font-semibold text-maroon-500 pr-20">{p.name}</p>
-                <p className="mt-1 font-display text-2xl font-bold text-charcoal">{formatCurrency(p.price)}</p>
-                <p className="mt-2 text-xs text-charcoal-light">{p.description}</p>
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            {visibleItems.map((item) => (
+              <div key={item.id} className="rounded-2xl bg-white/70 border border-maroon-500/10 p-5">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-saffron-700">{item.day}</span>
+                <p className="font-display text-lg font-semibold text-maroon-500 mt-1">{item.name}</p>
+                <p className="mt-1 font-display text-2xl font-bold text-charcoal">{formatCurrency(item.price)}</p>
                 <div className="flex items-center gap-3 mt-4 pt-4 border-t border-maroon-500/10">
                   <button
                     type="button"
-                    onClick={() => setEditingPackage(p)}
+                    onClick={() => setEditingItem(item)}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-maroon-600 hover:text-maroon-700 focus-ring rounded px-1"
                   >
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </button>
                   <button
                     type="button"
-                    onClick={() => setDeletingPackage(p)}
+                    onClick={() => setDeletingItem(item)}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 focus-ring rounded px-1"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Delete
@@ -107,22 +126,8 @@ export default function AdminSponsorsPage() {
             ))}
           </div>
 
-          <div className="rounded-2xl bg-beige-light border border-beige-dark p-5 mb-10">
-            <p className="flex items-center gap-2 text-sm font-semibold text-maroon-600 mb-3">
-              <Percent className="h-4 w-4" /> Discount applied automatically at checkout, by who&apos;s signed in
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {sponsorshipDiscountTiers.map((tier) => (
-                <div key={tier.label} className="rounded-xl bg-white/70 border border-maroon-500/10 p-3">
-                  <p className="font-display text-2xl font-bold text-maroon-500">{tier.percent}%</p>
-                  <p className="text-xs text-charcoal-light mt-0.5">{tier.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-xl font-semibold text-maroon-500">Sponsorships Received</h2>
+            <h2 className="font-display text-xl font-semibold text-maroon-500">Contributions Received</h2>
             <button
               type="button"
               onClick={handleDownload}
@@ -132,33 +137,31 @@ export default function AdminSponsorsPage() {
             </button>
           </div>
           <div className="rounded-2xl bg-white/70 border border-maroon-500/10 overflow-x-auto">
-            <table className="w-full text-sm min-w-[960px]">
+            <table className="w-full text-sm min-w-[860px]">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-charcoal-light border-b border-maroon-500/10">
-                  <th className="p-4">User</th>
-                  <th className="p-4">Category</th>
-                  <th className="p-4">Package Selected</th>
-                  <th className="p-4">MRP</th>
-                  <th className="p-4">Discount</th>
-                  <th className="p-4">Final Price</th>
+                  <th className="p-4">Contributor</th>
+                  <th className="p-4">Sponsorship</th>
+                  <th className="p-4">Amount</th>
                   <th className="p-4">Status</th>
+                  <th className="p-4">Date</th>
                   <th className="p-4">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-maroon-500/10">
-                {sponsors.length === 0 ? (
+                {individualSponsors.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-charcoal-light">
-                      No sponsorships received yet.
+                    <td colSpan={6} className="p-6 text-center text-charcoal-light">
+                      No individual contributions received yet.
                     </td>
                   </tr>
                 ) : (
-                  sponsors.map((s) => (
+                  individualSponsors.map((s) => (
                     <tr key={s.id}>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-saffron-100 text-maroon-500 shrink-0">
-                            <Building2 className="h-4 w-4" />
+                            <User className="h-4 w-4" />
                           </span>
                           <div className="min-w-0">
                             <p className="font-semibold text-charcoal truncate">{s.name}</p>
@@ -166,10 +169,7 @@ export default function AdminSponsorsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="p-4">{s.category ?? "—"}</td>
-                      <td className="p-4">{packageName(s.packageId)}</td>
-                      <td className="p-4">{s.mrp ? formatCurrency(s.mrp) : "—"}</td>
-                      <td className="p-4">{s.discountPercent ? `${s.discountPercent}%` : "—"}</td>
+                      <td className="p-4">{itemLabel(s.packageId)}</td>
                       <td className="p-4 font-semibold text-charcoal">{formatCurrency(s.amount)}</td>
                       <td className="p-4">
                         <span
@@ -181,6 +181,7 @@ export default function AdminSponsorsPage() {
                           {s.status.toUpperCase()}
                         </span>
                       </td>
+                      <td className="p-4">{formatDate(s.createdOn)}</td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <button
@@ -217,14 +218,14 @@ export default function AdminSponsorsPage() {
         onCancel={() => setDeleting(null)}
       />
 
-      <AdminSponsorshipPackageModal open={addingPackage} existing={null} onClose={() => setAddingPackage(false)} />
-      <AdminSponsorshipPackageModal open={!!editingPackage} existing={editingPackage} onClose={() => setEditingPackage(null)} />
+      <AdminIndividualSponsorshipItemModal open={addingItem} existing={null} onClose={() => setAddingItem(false)} />
+      <AdminIndividualSponsorshipItemModal open={!!editingItem} existing={editingItem} onClose={() => setEditingItem(null)} />
       <ConfirmDialog
-        open={!!deletingPackage}
-        title="Remove Package"
-        description={deletingPackage ? `Remove sponsorship package "${deletingPackage.name}"?` : ""}
-        onConfirm={confirmDeletePackage}
-        onCancel={() => setDeletingPackage(null)}
+        open={!!deletingItem}
+        title="Remove Sponsorship Item"
+        description={deletingItem ? `Remove "${deletingItem.name}"?` : ""}
+        onConfirm={confirmDeleteItem}
+        onCancel={() => setDeletingItem(null)}
       />
     </>
   );

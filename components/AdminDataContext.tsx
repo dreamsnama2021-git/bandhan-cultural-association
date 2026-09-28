@@ -5,9 +5,22 @@ import { sponsors as initialSponsors } from "@/data/sponsors";
 import { stalls as initialStalls } from "@/data/stalls";
 import { events as initialEvents } from "@/data/events";
 import { coupons as initialCoupons } from "@/data/coupons";
+import { sponsorshipPackages as initialSponsorshipPackagesRecord } from "@/data/sponsorshipPackages";
+import { individualSponsorshipItems as initialIndividualSponsorshipItems } from "@/data/individualSponsorshipItems";
 import { readSponsorshipPurchases, deleteSponsorshipPurchase } from "@/lib/sponsorships";
 import { readStallBookings, updateStallBooking as persistUpdateStallBooking } from "@/lib/stallBookings";
-import type { Sponsor, Stall, StallBooking, EventItem, Coupon } from "@/types";
+import { generateId } from "@/lib/utils";
+import type {
+  Sponsor,
+  Stall,
+  StallBooking,
+  EventItem,
+  Coupon,
+  SponsorshipPackageTier,
+  IndividualSponsorshipItem,
+} from "@/types";
+
+const initialSponsorshipPackages = Object.values(initialSponsorshipPackagesRecord);
 
 interface AdminDataContextValue {
   sponsors: Sponsor[];
@@ -23,12 +36,24 @@ interface AdminDataContextValue {
   rejectStallBooking: (id: string) => void;
 
   events: EventItem[];
+  addEvent: (event: Omit<EventItem, "id" | "slug">) => void;
   updateEvent: (id: string, patch: Partial<EventItem>) => void;
   deleteEvent: (id: string) => void;
 
   coupons: Coupon[];
+  addCoupon: (coupon: Omit<Coupon, "id">) => void;
   updateCoupon: (id: string, patch: Partial<Coupon>) => void;
   deleteCoupon: (id: string) => void;
+
+  sponsorshipPackages: SponsorshipPackageTier[];
+  addSponsorshipPackage: (pkg: Omit<SponsorshipPackageTier, "id">) => void;
+  updateSponsorshipPackage: (id: string, patch: Partial<SponsorshipPackageTier>) => void;
+  deleteSponsorshipPackage: (id: string) => void;
+
+  individualSponsorshipItems: IndividualSponsorshipItem[];
+  addIndividualSponsorshipItem: (item: Omit<IndividualSponsorshipItem, "id">) => void;
+  updateIndividualSponsorshipItem: (id: string, patch: Partial<IndividualSponsorshipItem>) => void;
+  deleteIndividualSponsorshipItem: (id: string) => void;
 }
 
 const AdminDataContext = createContext<AdminDataContextValue | null>(null);
@@ -39,6 +64,10 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const [stallBookings, setStallBookings] = useState<StallBooking[]>([]);
   const [events, setEvents] = useState<EventItem[]>(initialEvents);
   const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons);
+  const [sponsorshipPackages, setSponsorshipPackages] = useState<SponsorshipPackageTier[]>(initialSponsorshipPackages);
+  const [individualSponsorshipItems, setIndividualSponsorshipItems] = useState<IndividualSponsorshipItem[]>(
+    initialIndividualSponsorshipItems
+  );
 
   useEffect(() => {
     const purchased = readSponsorshipPurchases();
@@ -80,6 +109,14 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     setStallBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "rejected", respondedOn } : b)));
   };
 
+  const addEvent = (event: Omit<EventItem, "id" | "slug">) => {
+    const id = generateId("evt");
+    const slug = event.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    setEvents((prev) => [...prev, { ...event, id, slug }]);
+  };
   const updateEvent = (id: string, patch: Partial<EventItem>) => {
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
   };
@@ -87,11 +124,34 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     setEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
+  const addCoupon = (coupon: Omit<Coupon, "id">) => {
+    setCoupons((prev) => [...prev, { ...coupon, id: generateId("cpn") }]);
+  };
   const updateCoupon = (id: string, patch: Partial<Coupon>) => {
     setCoupons((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   };
   const deleteCoupon = (id: string) => {
     setCoupons((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const addSponsorshipPackage = (pkg: Omit<SponsorshipPackageTier, "id">) => {
+    setSponsorshipPackages((prev) => [...prev, { ...pkg, id: generateId("pkg") }]);
+  };
+  const updateSponsorshipPackage = (id: string, patch: Partial<SponsorshipPackageTier>) => {
+    setSponsorshipPackages((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  };
+  const deleteSponsorshipPackage = (id: string) => {
+    setSponsorshipPackages((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const addIndividualSponsorshipItem = (item: Omit<IndividualSponsorshipItem, "id">) => {
+    setIndividualSponsorshipItems((prev) => [...prev, { ...item, id: generateId("isp") }]);
+  };
+  const updateIndividualSponsorshipItem = (id: string, patch: Partial<IndividualSponsorshipItem>) => {
+    setIndividualSponsorshipItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  };
+  const deleteIndividualSponsorshipItem = (id: string) => {
+    setIndividualSponsorshipItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   return (
@@ -107,11 +167,21 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         approveStallBooking,
         rejectStallBooking,
         events,
+        addEvent,
         updateEvent,
         deleteEvent,
         coupons,
+        addCoupon,
         updateCoupon,
         deleteCoupon,
+        sponsorshipPackages,
+        addSponsorshipPackage,
+        updateSponsorshipPackage,
+        deleteSponsorshipPackage,
+        individualSponsorshipItems,
+        addIndividualSponsorshipItem,
+        updateIndividualSponsorshipItem,
+        deleteIndividualSponsorshipItem,
       }}
     >
       {children}

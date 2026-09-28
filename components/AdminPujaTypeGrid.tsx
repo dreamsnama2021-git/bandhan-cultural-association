@@ -60,7 +60,7 @@ export default function AdminPujaTypeGrid({
             <DashboardCard
               href={`${baseHref}&section=tickets`}
               icon="Ticket"
-              title="Buy Tickets"
+              title="Tickets"
               description={`Ticket sales for ${puja.name} events.`}
               cta="View Tickets"
               index={4}

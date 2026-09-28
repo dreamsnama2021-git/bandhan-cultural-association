@@ -68,8 +68,19 @@ export interface IndividualSponsorDetails {
   fullName: string;
   phone: string;
   email: string;
+  itemId: string;
   amount: number;
   message?: string;
+}
+
+export type IndividualSponsorshipCategory = "puja" | "mahabhog";
+
+export interface IndividualSponsorshipItem {
+  id: string;
+  day: string;
+  name: string;
+  category: IndividualSponsorshipCategory;
+  price: number;
 }
 
 export interface Sponsor {

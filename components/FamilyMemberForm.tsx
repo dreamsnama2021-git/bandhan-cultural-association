@@ -12,10 +12,12 @@ export default function FamilyMemberForm({
   maxMembers,
   onContinue,
   onBack,
+  submitting = false,
 }: {
   maxMembers: number;
   onContinue: (members: FamilyMemberDetails[]) => void;
   onBack: () => void;
+  submitting?: boolean;
 }) {
   const [members, setMembers] = useState<FamilyMemberDetails[]>([]);
   const [errors, setErrors] = useState<Record<string, Errors>>({});
@@ -122,11 +124,11 @@ export default function FamilyMemberForm({
       )}
 
       <div className="mt-8 flex gap-3">
-        <Button type="button" variant="ghost" onClick={onBack}>
+        <Button type="button" variant="ghost" onClick={onBack} disabled={submitting}>
           Back
         </Button>
-        <Button type="button" size="lg" className="flex-1 justify-center" onClick={handleSubmit}>
-          Submit
+        <Button type="button" size="lg" className="flex-1 justify-center" onClick={handleSubmit} disabled={submitting}>
+          {submitting ? "Creating your account…" : "Submit"}
         </Button>
       </div>
     </div>

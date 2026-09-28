@@ -49,7 +49,7 @@ export default function GuestPage() {
             <DashboardCard
               href="/tickets"
               icon="Ticket"
-              title="Buy Tickets"
+              title="Tickets"
               description="Ticket sales for upcoming events."
               cta="View Tickets"
               index={4}

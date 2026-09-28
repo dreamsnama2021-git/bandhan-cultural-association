@@ -5,7 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Users, UsersRound, Building2, Store, Ticket, Tag, Soup, Crown, UserCheck } from "lucide-react";
+import {
+  Users,
+  UsersRound,
+  Building2,
+  Store,
+  HeartHandshake,
+  Ticket,
+  CalendarDays,
+  Images,
+  Tag,
+  Soup,
+  Crown,
+  UserCheck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Container from "@/components/Container";
 import Modal from "@/components/Modal";
@@ -17,9 +30,12 @@ import type { PujaCategoryInfo } from "@/types";
 
 const sections = [
   { href: "/admin/members", label: "Members", description: "Browse the full member directory.", icon: Users },
-  { href: "/admin/sponsors", label: "Sponsors", description: "Business & individual sponsorships.", icon: Building2 },
-  { href: "/admin/stalls", label: "Stall Bookings", description: "Festival stall inventory & status.", icon: Store },
-  { href: "/admin/events", label: "Events & Tickets", description: "Upcoming events and ticket pricing.", icon: Ticket },
+  { href: "/admin/sponsors", label: "Business Sponsors", description: "Business sponsorship packages & transactions.", icon: Building2 },
+  { href: "/admin/stalls", label: "Stalls", description: "Festival stall inventory & booking status.", icon: Store },
+  { href: "/admin/sponsors/individual", label: "Individual Sponsors", description: "Individual contributions received.", icon: HeartHandshake },
+  { href: "/admin/tickets", label: "Tickets", description: "Ticket pricing and seat availability.", icon: Ticket },
+  { href: "/admin/calendar", label: "Pooja Calendar", description: "Event schedule across all Pujas.", icon: CalendarDays },
+  { href: "/admin/images", label: "View Images", description: "Google Drive link for the festival photo gallery.", icon: Images },
   { href: "/admin/coupons", label: "Coupons", description: "Business promo codes & redemptions.", icon: Tag },
   { href: "/admin/bhog", label: "Bhog Coupons", description: "Navratri-day Bhog coupons for members.", icon: Soup },
 ];

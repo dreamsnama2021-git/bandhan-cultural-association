@@ -7,14 +7,13 @@ import Container from "@/components/Container";
 import Button from "@/components/Button";
 import Checkout from "@/components/Checkout";
 import Confirmation from "@/components/Confirmation";
-import MembershipCard from "@/components/MembershipCard";
 import FamilyMemberForm from "@/components/FamilyMemberForm";
-import { cn, isValidEmail, isValidMobile, generateMemberId, generatePassword } from "@/lib/utils";
-import { saveCredential, setCurrentSession } from "@/lib/credentials";
+import { cn, isValidEmail, isValidMobile } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import { membershipConfig } from "@/lib/config";
 import { pujaCategories } from "@/data/pujaCategories";
 import { registrationMembershipTypes } from "@/data/membership";
-import type { FamilyMemberDetails, Member, MembershipType, PaymentResult, PujaCategory } from "@/types";
+import type { FamilyMemberDetails, MembershipType, PaymentResult } from "@/types";
 
 type Phase = "form" | "family" | "payment" | "confirmation";
 
@@ -22,13 +21,14 @@ export default function RegisterPage() {
   const [phase, setPhase] = useState<Phase>("form");
   const [pujas, setPujas] = useState<string[]>([]);
   const [membershipType, setMembershipType] = useState<MembershipType | null>(null);
+  const [fullName, setFullName] = useState("");
   const [number, setNumber] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberDetails[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<PaymentResult | null>(null);
-  const [member, setMember] = useState<Member | null>(null);
-  const [loginPassword, setLoginPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const selectedPlan = registrationMembershipTypes.find((t) => t.id === membershipType);
 
@@ -41,10 +41,48 @@ export default function RegisterPage() {
     const next: Record<string, string> = {};
     if (pujas.length === 0) next.pujas = "Select at least one Puja.";
     if (!membershipType) next.membershipType = "Select a membership type.";
+    if (!fullName.trim()) next.fullName = "Enter your full name.";
     if (!isValidMobile(number)) next.number = "Enter a valid 10-digit number.";
     if (!isValidEmail(email)) next.email = "Enter a valid email address.";
+    if (password.length < 8) next.password = "Password must be at least 8 characters.";
     setErrors(next);
     if (Object.keys(next).length === 0) setPhase("family");
+  };
+
+  const createAccount = async (members: FamilyMemberDetails[]) => {
+    if (submitting) return;
+    setSubmitting(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          full_name: fullName.trim(),
+          mobile: number,
+          membership_type: membershipType,
+          pujas,
+          family_members: members.map(({ name, contact, age }) => ({ name, contact, age })),
+        },
+      },
+    });
+    setSubmitting(false);
+
+    // Supabase returns a user with no identities (instead of an error) when
+    // the email is already registered.
+    const alreadyRegistered = !error && data.user && (data.user.identities?.length ?? 0) === 0;
+    if (error || alreadyRegistered) {
+      setErrors({
+        email: alreadyRegistered
+          ? "This email is already registered. Please log in instead."
+          : error?.message ?? "Could not create your account. Please try again.",
+      });
+      setPhase("form");
+      return;
+    }
+
+    setFamilyMembers(members);
+    setPhase("payment");
   };
 
   const inputClass =
@@ -119,7 +157,15 @@ export default function RegisterPage() {
 
               <div>
                 <p className="text-sm font-semibold text-charcoal mb-1.5">
-                  <span className="text-saffron-700">3</span> &nbsp;Number
+                  <span className="text-saffron-700">3</span> &nbsp;Full Name
+                </p>
+                <input className={inputClass} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="As you'd like it on your membership card" />
+                {errors.fullName && <p className="mt-1.5 text-xs text-maroon-600">{errors.fullName}</p>}
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-charcoal mb-1.5">
+                  <span className="text-saffron-700">4</span> &nbsp;Number
                 </p>
                 <input className={inputClass} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="98300 12345" inputMode="numeric" />
                 {errors.number && <p className="mt-1.5 text-xs text-maroon-600">{errors.number}</p>}
@@ -127,10 +173,19 @@ export default function RegisterPage() {
 
               <div>
                 <p className="text-sm font-semibold text-charcoal mb-1.5">
-                  <span className="text-saffron-700">4</span> &nbsp;Email
+                  <span className="text-saffron-700">5</span> &nbsp;Email
                 </p>
                 <input type="email" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                <p className="mt-1.5 text-xs text-charcoal-light">We&apos;ll send a verification link to this address.</p>
                 {errors.email && <p className="mt-1.5 text-xs text-maroon-600">{errors.email}</p>}
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-charcoal mb-1.5">
+                  <span className="text-saffron-700">6</span> &nbsp;Password
+                </p>
+                <input type="password" className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
+                {errors.password && <p className="mt-1.5 text-xs text-maroon-600">{errors.password}</p>}
               </div>
 
               <Button type="submit" size="lg" className="w-full justify-center">
@@ -150,10 +205,8 @@ export default function RegisterPage() {
                 : 0
             }
             onBack={() => setPhase("form")}
-            onContinue={(members) => {
-              setFamilyMembers(members);
-              setPhase("payment");
-            }}
+            onContinue={createAccount}
+            submitting={submitting}
           />
         )}
 
@@ -174,31 +227,6 @@ export default function RegisterPage() {
                 price: selectedPlan.price,
               }}
               onComplete={(res) => {
-                const newMember: Member = {
-                  id: "new-member",
-                  memberId: generateMemberId(),
-                  fullName: email.split("@")[0].replace(/[._]/g, " ") || "New Member",
-                  email,
-                  mobile: number,
-                  address: "",
-                  city: "",
-                  membershipType: membershipType ?? "general",
-                  familyMembers: familyMembers.length,
-                  joinedOn: new Date().toISOString(),
-                  validUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                  role: "member",
-                  pujas: pujas as PujaCategory[],
-                };
-                const password = generatePassword();
-                saveCredential({
-                  email,
-                  password,
-                  member: newMember,
-                  familyMembers,
-                });
-                setCurrentSession(email);
-                setMember(newMember);
-                setLoginPassword(password);
                 setResult(res);
                 setPhase("confirmation");
               }}
@@ -206,29 +234,27 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {phase === "confirmation" && result && member && (
+        {phase === "confirmation" && result && (
           <Confirmation
             result={result}
-            title="Welcome to the Association!"
-            message="Your registration is complete. Your digital membership card is ready below."
+            title="One Last Step — Verify Your Email"
+            message="Your payment is confirmed. Activate your membership by verifying your email address."
           >
-            <div className="rounded-2xl bg-beige-light border border-beige-dark p-5 text-left mb-8">
+            <div className="rounded-2xl bg-beige-light border border-beige-dark p-5 text-left">
               <p className="text-xs font-semibold uppercase tracking-wide text-saffron-700 mb-2">
-                Login Details (sent to {email})
+                Check your inbox
               </p>
-              <div className="flex items-center justify-between text-sm py-1">
-                <span className="text-charcoal-light">Login ID (Email)</span>
-                <span className="font-semibold text-charcoal">{email}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm py-1">
-                <span className="text-charcoal-light">Password</span>
-                <span className="font-mono font-semibold text-charcoal">{loginPassword}</span>
-              </div>
+              <p className="text-sm text-charcoal">
+                We&apos;ve sent a verification link to <span className="font-semibold">{email}</span>. Click it to
+                activate your account, then log in with this email and the password you chose.
+              </p>
               <p className="mt-2 text-xs text-charcoal-light">
-                Use these credentials on the Member Login screen next time.
+                Can&apos;t find it? Check your spam folder.
               </p>
+              <Button href="/login" size="md" className="mt-4">
+                Go to Login
+              </Button>
             </div>
-            <MembershipCard member={member} />
           </Confirmation>
         )}
       </Container>

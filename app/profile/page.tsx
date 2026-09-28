@@ -24,7 +24,8 @@ import Modal from "@/components/Modal";
 import Checkout from "@/components/Checkout";
 import { cn, formatCurrency, formatDate, generateId, isValidMobile } from "@/lib/utils";
 import { useToast } from "@/components/Toast";
-import { getCurrentSessionMember, updateFamilyMembers } from "@/lib/credentials";
+import { getCurrentSessionMember, updateFamilyMembers, updateMemberRecord } from "@/lib/credentials";
+import { supabase } from "@/lib/supabase";
 import { membershipConfig } from "@/lib/config";
 import {
   currentMember,
@@ -77,7 +78,21 @@ export default function ProfilePage() {
 
   const activeData = tabs.find((t) => t.id === activeTab)!.data;
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const { error } = await supabase
+      .from("members")
+      .update({ full_name: member.fullName, mobile: member.mobile, city: member.city, address: member.address })
+      .eq("id", member.id);
+    if (error) {
+      showToast("Could not save your changes. Please try again.", "error");
+      return;
+    }
+    updateMemberRecord(member.id, {
+      fullName: member.fullName,
+      mobile: member.mobile,
+      city: member.city,
+      address: member.address,
+    });
     setEditing(false);
     showToast("Profile updated successfully", "success");
   };
@@ -112,6 +127,12 @@ export default function ProfilePage() {
     setFamilyMembers(nextFamily);
     setMember((m) => ({ ...m, familyMembers: m.familyMembers + 1 }));
     if (sessionEmail) updateFamilyMembers(sessionEmail, nextFamily);
+    supabase
+      .from("family_members")
+      .insert({ member_id: member.id, name: draft.name, contact: draft.contact, age: draft.age })
+      .then(({ error }) => {
+        if (error) showToast("Family member saved locally, but could not sync to your account.", "error");
+      });
     setAddModalOpen(false);
     showToast("Family member added successfully", "success");
   };
@@ -163,7 +184,7 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <Field label="Full Name" value={member.fullName} editing={editing} onChange={(v) => setMember({ ...member, fullName: v })} inputClass={inputClass} />
                   <Field label="Phone" value={member.mobile} editing={editing} onChange={(v) => setMember({ ...member, mobile: v })} inputClass={inputClass} />
-                  <Field label="Email" value={member.email} editing={editing} onChange={(v) => setMember({ ...member, email: v })} inputClass={inputClass} />
+                  <Field label="Email" value={member.email} editing={false} onChange={() => {}} inputClass={inputClass} />
                   <Field label="City" value={member.city} editing={editing} onChange={(v) => setMember({ ...member, city: v })} inputClass={inputClass} />
                   <Field label="Address" value={member.address} editing={editing} onChange={(v) => setMember({ ...member, address: v })} inputClass={inputClass} className="sm:col-span-2" />
                 </div>

@@ -67,7 +67,7 @@ export default function DashboardPage() {
             <DashboardCard
               href="/tickets"
               icon="Ticket"
-              title="Buy Tickets"
+              title="Tickets"
               description="Get access to upcoming association events."
               cta="Browse Tickets"
               className="lg:col-span-2"
@@ -79,7 +79,7 @@ export default function DashboardPage() {
               title="Event / Calendar"
               description="Explore upcoming events and reserve your participation."
               cta="View Calendar"
-              className="sm:col-span-2 lg:col-span-3"
+              className="lg:col-span-2"
               index={5}
             />
             <DashboardCard
@@ -88,7 +88,7 @@ export default function DashboardPage() {
               title="Images"
               description="Browse festival photo galleries from each puja celebration."
               cta="View Gallery"
-              className="sm:col-span-2 lg:col-span-3"
+              className="lg:col-span-2"
               index={6}
             />
             <DashboardCard
@@ -97,7 +97,7 @@ export default function DashboardPage() {
               title="Bhog"
               description="Pick a Navratri day to see your family's Bhog coupons."
               cta="View Navratri Days"
-              className="sm:col-span-2 lg:col-span-3"
+              className="lg:col-span-2"
               index={7}
             />
           </div>

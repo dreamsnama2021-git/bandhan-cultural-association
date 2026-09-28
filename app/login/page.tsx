@@ -7,7 +7,9 @@ import Container from "@/components/Container";
 import Button from "@/components/Button";
 import { useToast } from "@/components/Toast";
 import { isValidEmail } from "@/lib/utils";
-import { findCredential, readAllCredentials, setCurrentSession, setAdminSession } from "@/lib/credentials";
+import { setAdminSession } from "@/lib/credentials";
+import { supabase } from "@/lib/supabase";
+import { syncSupabaseMember, signOutMember } from "@/lib/memberAuth";
 import { adminConfig } from "@/lib/config";
 
 export default function LoginPage() {
@@ -16,9 +18,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     const next: typeof errors = {};
     if (!isValidEmail(email)) next.email = "Enter a valid email address.";
     if (!password || password.length < 4) next.password = "Enter your password.";
@@ -32,25 +36,28 @@ export default function LoginPage() {
       return;
     }
 
-    const isRegisteredEmail = readAllCredentials().some(
-      (c) => c.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (isRegisteredEmail) {
-      const match = findCredential(email, password);
-      if (!match) {
-        setErrors({ password: "Incorrect password for this email." });
-        return;
-      }
-      setCurrentSession(email);
-      showToast(`Welcome back, ${match.member.fullName}!`, "success");
-      router.push(match.member.role === "leader" ? "/admin" : "/membership");
+    setSubmitting(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      setSubmitting(false);
+      const notConfirmed = error?.message.toLowerCase().includes("email not confirmed");
+      setErrors({
+        password: notConfirmed
+          ? "Please verify your email first — check your inbox for the confirmation link."
+          : "Incorrect email or password.",
+      });
       return;
     }
 
-    // No registration on record for this email — allow demo access anyway.
-    showToast("Welcome back!", "success");
-    router.push("/membership");
+    const member = await syncSupabaseMember(data.user.id);
+    setSubmitting(false);
+    if (!member) {
+      await signOutMember();
+      setErrors({ password: "No member profile found for this account." });
+      return;
+    }
+    showToast(`Welcome back, ${member.fullName}!`, "success");
+    router.push(member.role === "leader" ? "/admin" : "/membership");
   };
 
   const inputClass =
@@ -61,9 +68,11 @@ export default function LoginPage() {
       <Container className="w-full">
         <div className="mx-auto max-w-sm">
           <div className="text-center mb-8">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-maroon-500 text-cream font-display font-bold text-xl shadow-card">
-              B
-            </span>
+            <img
+              src="/logo.webp"
+              alt="Bandhan Cultural Association"
+              className="mx-auto h-14 w-14 rounded-full object-cover shadow-card"
+            />
             <h1 className="mt-4 font-display text-2xl font-semibold text-maroon-500">
               Member Login
             </h1>
@@ -101,8 +110,8 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button type="submit" size="lg" className="flex-1 justify-center">
-                Login
+              <Button type="submit" size="lg" className="flex-1 justify-center" disabled={submitting}>
+                {submitting ? "Signing in…" : "Login"}
               </Button>
               <Button
                 type="button"

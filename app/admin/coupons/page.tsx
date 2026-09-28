@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Plus } from "lucide-react";
 import Container from "@/components/Container";
 import AdminTopBar from "@/components/AdminTopBar";
 import AdminEditCouponModal from "@/components/AdminEditCouponModal";
@@ -12,6 +12,7 @@ import type { Coupon } from "@/types";
 
 export default function AdminCouponsPage() {
   const { coupons, deleteCoupon } = useAdminData();
+  const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Coupon | null>(null);
   const [deleting, setDeleting] = useState<Coupon | null>(null);
 
@@ -25,6 +26,15 @@ export default function AdminCouponsPage() {
       <AdminTopBar title="Coupons" description="Business promo codes and redemption activity." />
       <section className="section-py">
         <Container>
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-maroon-500 text-cream text-sm font-semibold px-4 py-2 focus-ring"
+            >
+              <Plus className="h-4 w-4" /> Add Coupon
+            </button>
+          </div>
           <div className="rounded-2xl bg-white/70 border border-maroon-500/10 overflow-x-auto">
             <table className="w-full text-sm min-w-[720px]">
               <thead>
@@ -71,7 +81,8 @@ export default function AdminCouponsPage() {
         </Container>
       </section>
 
-      <AdminEditCouponModal coupon={editing} onClose={() => setEditing(null)} />
+      <AdminEditCouponModal open={adding} existing={null} onClose={() => setAdding(false)} />
+      <AdminEditCouponModal open={!!editing} existing={editing} onClose={() => setEditing(null)} />
       <ConfirmDialog
         open={!!deleting}
         title="Remove Coupon"

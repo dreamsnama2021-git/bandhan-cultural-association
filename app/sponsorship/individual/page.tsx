@@ -10,23 +10,30 @@ import Checkout from "@/components/Checkout";
 import Confirmation from "@/components/Confirmation";
 import Button from "@/components/Button";
 import { cn, formatCurrency, isValidEmail, isValidMobile } from "@/lib/utils";
-import type { IndividualSponsorDetails, PaymentResult } from "@/types";
+import { individualSponsorshipItems } from "@/data/individualSponsorshipItems";
+import { addSponsorshipPurchase } from "@/lib/sponsorships";
+import { getCurrentSessionMember } from "@/lib/credentials";
+import type { IndividualSponsorDetails, IndividualSponsorshipCategory, PaymentResult } from "@/types";
 
-const steps = ["Amount", "Your Details", "Payment", "Confirmation"];
-const presetAmounts = [1000, 2500, 5000, 10000];
+const steps = ["Select Sponsorship", "Your Details", "Payment", "Confirmation"];
+
+const categoryTabs: { id: IndividualSponsorshipCategory; label: string }[] = [
+  { id: "puja", label: "Puja Sponsorship" },
+  { id: "mahabhog", label: "Mahabhog Sponsorship" },
+];
 
 export default function IndividualSponsorshipPage() {
   const [step, setStep] = useState(0);
-  const [amount, setAmount] = useState<number>(2500);
-  const [customAmount, setCustomAmount] = useState("");
-  const [isCustom, setIsCustom] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<IndividualSponsorshipCategory>("puja");
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [details, setDetails] = useState<IndividualSponsorDetails | null>(null);
   const [result, setResult] = useState<PaymentResult | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof IndividualSponsorDetails, string>>>({});
 
   const [form, setForm] = useState({ fullName: "", phone: "", email: "", message: "" });
 
-  const finalAmount = isCustom ? Number(customAmount) || 0 : amount;
+  const visibleItems = individualSponsorshipItems.filter((i) => i.category === activeCategory);
+  const selectedItem = individualSponsorshipItems.find((i) => i.id === selectedItemId) ?? null;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -34,10 +41,9 @@ export default function IndividualSponsorshipPage() {
     if (!form.fullName.trim()) next.fullName = "Full name is required.";
     if (!isValidMobile(form.phone)) next.phone = "Enter a valid 10-digit phone number.";
     if (!isValidEmail(form.email)) next.email = "Enter a valid email address.";
-    if (finalAmount <= 0) next.amount = "Enter a valid contribution amount.";
     setErrors(next);
-    if (Object.keys(next).length === 0) {
-      setDetails({ ...form, amount: finalAmount });
+    if (Object.keys(next).length === 0 && selectedItem) {
+      setDetails({ ...form, itemId: selectedItem.id, amount: selectedItem.price });
       setStep(2);
     }
   };
@@ -50,7 +56,7 @@ export default function IndividualSponsorshipPage() {
       <PageHeader
         eyebrow="Individual Sponsorship"
         title="Support the celebration as an individual"
-        description="Every contribution — big or small — helps us keep the festival alive for the whole community."
+        description="Choose a Puja or Mahabhog to sponsor — every contribution helps us keep the festival alive for the whole community."
         crumbs={[{ label: "Sponsorship", href: "/sponsorship" }, { label: "Individual" }]}
       />
       <section className="section-py">
@@ -64,53 +70,57 @@ export default function IndividualSponsorshipPage() {
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-maroon-500/10 text-maroon-500">
                     <HeartHandshake className="h-6 w-6" />
                   </span>
-                  <h2 className="font-display text-2xl font-semibold text-maroon-500">Choose a contribution amount</h2>
+                  <h2 className="font-display text-2xl font-semibold text-maroon-500">Choose a Sponsorship</h2>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {presetAmounts.map((a) => (
+
+                <div className="flex gap-2 mb-5">
+                  {categoryTabs.map((tab) => (
                     <button
-                      key={a}
-                      onClick={() => {
-                        setAmount(a);
-                        setIsCustom(false);
-                      }}
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveCategory(tab.id)}
                       className={cn(
-                        "rounded-xl border-2 py-4 text-center font-display font-semibold transition-colors focus-ring",
-                        !isCustom && amount === a ? "border-saffron-500 bg-saffron-50 text-maroon-500" : "border-maroon-500/10 bg-white/60 hover:border-saffron-500/40"
+                        "flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors focus-ring",
+                        activeCategory === tab.id ? "bg-maroon-500 text-cream" : "bg-white/70 text-charcoal hover:bg-maroon-50"
                       )}
                     >
-                      {formatCurrency(a)}
+                      {tab.label}
                     </button>
                   ))}
                 </div>
-                <button
-                  onClick={() => setIsCustom(true)}
-                  className={cn(
-                    "mt-3 w-full rounded-xl border-2 py-4 text-center font-semibold transition-colors focus-ring",
-                    isCustom ? "border-saffron-500 bg-saffron-50" : "border-maroon-500/10 bg-white/60 hover:border-saffron-500/40"
-                  )}
-                >
-                  Custom Amount
-                </button>
-                {isCustom && (
-                  <input
-                    type="number"
-                    min={1}
-                    value={customAmount}
-                    onChange={(e) => setCustomAmount(e.target.value)}
-                    placeholder="Enter amount in ₹"
-                    className={cn(inputClass, "mt-3")}
-                  />
-                )}
-                <Button size="lg" className="mt-8 w-full sm:w-auto" onClick={() => setStep(1)}>
-                  Continue with {formatCurrency(finalAmount)}
+
+                <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                  {visibleItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedItemId(item.id)}
+                      className={cn(
+                        "flex w-full items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors focus-ring",
+                        selectedItemId === item.id ? "border-saffron-500 bg-saffron-50" : "border-maroon-500/10 bg-white/60 hover:border-saffron-500/40"
+                      )}
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-[10px] font-semibold uppercase tracking-wide text-saffron-700">{item.day}</span>
+                        <span className="block font-semibold text-charcoal truncate">{item.name}</span>
+                      </span>
+                      <span className="font-semibold text-maroon-600 shrink-0">{formatCurrency(item.price)}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <Button size="lg" className="mt-8 w-full sm:w-auto" onClick={() => setStep(1)} disabled={!selectedItem}>
+                  {selectedItem ? `Continue with ${selectedItem.name} — ${formatCurrency(selectedItem.price)}` : "Select a sponsorship to continue"}
                 </Button>
               </div>
             )}
 
-            {step === 1 && (
+            {step === 1 && selectedItem && (
               <form onSubmit={handleSubmit} noValidate>
-                <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-6">Your details</h2>
+                <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-2">Your details</h2>
+                <p className="text-sm text-charcoal-light mb-6">
+                  Sponsoring: <span className="font-semibold text-maroon-600">{selectedItem.name}</span> ({selectedItem.day}) — {formatCurrency(selectedItem.price)}
+                </p>
                 <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-semibold text-charcoal mb-1.5">Full Name</label>
@@ -139,12 +149,28 @@ export default function IndividualSponsorshipPage() {
               </form>
             )}
 
-            {step === 2 && details && (
+            {step === 2 && details && selectedItem && (
               <div>
                 <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-6">Complete your contribution</h2>
                 <Checkout
-                  summary={{ itemLabel: "Individual Sponsorship", itemDescription: details.fullName, price: details.amount }}
+                  summary={{ itemLabel: selectedItem.name, itemDescription: `${selectedItem.day} — ${details.fullName}`, price: details.amount }}
                   onComplete={(res) => {
+                    const session = getCurrentSessionMember();
+                    addSponsorshipPurchase({
+                      id: `sp-${res.orderId}`,
+                      type: "individual",
+                      name: details.fullName,
+                      contactEmail: details.email,
+                      contactPhone: details.phone,
+                      packageId: details.itemId,
+                      mrp: details.amount,
+                      amount: res.amount,
+                      status: "confirmed",
+                      createdOn: res.date,
+                      memberEmail: session?.member.email,
+                      membershipType: session?.member.membershipType,
+                      pujas: session?.member.pujas,
+                    });
                     setResult(res);
                     setStep(3);
                   }}

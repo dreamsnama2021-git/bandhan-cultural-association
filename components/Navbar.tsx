@@ -10,6 +10,7 @@ import MobileMenu from "@/components/MobileMenu";
 import { cn, formatDate } from "@/lib/utils";
 import { isAdminSession, clearAdminSession, getCurrentSessionMember } from "@/lib/credentials";
 import { getNotifications, markAllRead, type MemberNotification } from "@/lib/notifications";
+import { signOutMember } from "@/lib/memberAuth";
 
 const navLinks = [
   { href: "/membership", label: "Membership" },
@@ -31,7 +32,7 @@ export default function Navbar() {
   const notifRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const showMenu = !noMenuRoutes.includes(pathname ?? "");
+  const showMenu = !noMenuRoutes.includes(pathname ?? "") && !sessionMemberId;
   const isAdminRoute = pathname?.startsWith("/admin");
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -66,8 +67,9 @@ export default function Navbar() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     clearAdminSession();
+    if (sessionMemberId) await signOutMember();
     setProfileMenuOpen(false);
     router.push("/login");
   };
@@ -88,10 +90,12 @@ export default function Navbar() {
           </button>
         )}
 
-        <Link href="/" className="flex items-center gap-2.5 focus-ring rounded-full">
-          <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-maroon-500 text-cream font-display font-bold text-lg">
-            B
-          </span>
+        <Link href={sessionMemberId ? "/membership" : "/"} className="flex items-center gap-2.5 focus-ring rounded-full">
+          <img
+            src="/logo.webp"
+            alt="Bandhan Cultural Association"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover shrink-0"
+          />
           <span className="hidden sm:flex flex-col leading-none">
             <span className="font-display font-semibold text-lg text-maroon-500 tracking-wide">
               Bandhan
@@ -105,25 +109,27 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
-          {navLinks.map((link) => {
-            const active = pathname?.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "px-4 py-2 rounded-full text-sm font-semibold transition-colors focus-ring",
-                  active
-                    ? "bg-maroon-500 text-cream"
-                    : "text-charcoal hover:bg-maroon-50 hover:text-maroon-600"
-                )}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {!sessionMemberId && (
+          <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
+            {navLinks.map((link) => {
+              const active = pathname?.startsWith(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-sm font-semibold transition-colors focus-ring",
+                    active
+                      ? "bg-maroon-500 text-cream"
+                      : "text-charcoal hover:bg-maroon-50 hover:text-maroon-600"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         <div className="flex items-center gap-1">
           {sessionMemberId && (
@@ -204,7 +210,7 @@ export default function Navbar() {
                     <User className="h-4 w-4 text-saffron-600" /> My Profile
                   </Link>
                 )}
-                {isAdmin && (
+                {(isAdmin || sessionMemberId) && (
                   <button
                     type="button"
                     onClick={handleLogout}
