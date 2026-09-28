@@ -42,7 +42,7 @@ export const events: EventItem[] = [
     description:
       "A warm, intimate evening of prayer, prasad and prosperity — celebrated together as one association family.",
     image: "laxmi",
-    ticketPriceFrom: 0,
+    ticketPriceFrom: 500,
     seatsAvailable: 150,
   },
   {
@@ -56,7 +56,7 @@ export const events: EventItem[] = [
     description:
       "An evening of devotion, lights and community gathering, with midnight aarti and prasad distribution.",
     image: "kali",
-    ticketPriceFrom: 0,
+    ticketPriceFrom: 500,
     seatsAvailable: 300,
   },
   {
@@ -84,7 +84,7 @@ export const events: EventItem[] = [
     description:
       "Honouring knowledge and the arts with morning offerings and a youth-led cultural programme, followed by khichuri prasad.",
     image: "saraswati",
-    ticketPriceFrom: 0,
+    ticketPriceFrom: 500,
     seatsAvailable: 200,
   },
 ];
