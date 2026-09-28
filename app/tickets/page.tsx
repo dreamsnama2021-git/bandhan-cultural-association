@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import Container from "@/components/Container";
 import PageHeader from "@/components/PageHeader";
 import EventCard from "@/components/EventCard";
+import MyTickets from "@/components/MyTickets";
 import { events } from "@/data/events";
 import { pujaCategories } from "@/data/pujaCategories";
 
@@ -25,6 +26,7 @@ export default function TicketsPage({
       />
       <section className="section-py">
         <Container>
+          <MyTickets />
           {activePuja && (
             <div className="mb-8 flex items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-saffron-100 text-maroon-600 text-sm font-semibold px-4 py-2">
