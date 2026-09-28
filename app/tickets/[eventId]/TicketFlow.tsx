@@ -11,7 +11,7 @@ import Checkout from "@/components/Checkout";
 import Confirmation from "@/components/Confirmation";
 import Button from "@/components/Button";
 import { formatCurrency, formatDate, generateOrderId, generateTransactionId, isValidEmail, isValidMobile } from "@/lib/utils";
-import { getCurrentSessionMember, type StoredCredential } from "@/lib/credentials";
+import { getCurrentSessionMember, SESSION_CHANGE_EVENT, type StoredCredential } from "@/lib/credentials";
 import { addTicketBooking, freeTicketAllowance, freeTicketsUsed } from "@/lib/ticketBookings";
 import { ticketTypesByEvent } from "@/data/events";
 import type { EventItem, PaymentResult, TicketTypeOption } from "@/types";
@@ -45,12 +45,20 @@ export default function TicketFlow({ event }: { event: EventItem }) {
 
   // A signed-in member gets 1 free ticket + 1 per family member (per event).
   useEffect(() => {
-    const current = getCurrentSessionMember();
-    if (!current) return;
-    setSession(current);
-    setCustomer({ name: current.member.fullName, phone: current.member.mobile, email: current.email });
-    const allowance = freeTicketAllowance(current.familyMembers.length);
-    setFreeRemaining(Math.max(0, allowance - freeTicketsUsed(current.email, event.id)));
+    const refresh = () => {
+      const current = getCurrentSessionMember();
+      setSession(current);
+      if (!current) {
+        setFreeRemaining(0);
+        return;
+      }
+      setCustomer((c) => (c.email ? c : { name: current.member.fullName, phone: current.member.mobile, email: current.email }));
+      const allowance = freeTicketAllowance(current.familyMembers.length);
+      setFreeRemaining(Math.max(0, allowance - freeTicketsUsed(current.email, event.id)));
+    };
+    refresh();
+    window.addEventListener(SESSION_CHANGE_EVENT, refresh);
+    return () => window.removeEventListener(SESSION_CHANGE_EVENT, refresh);
   }, [event.id]);
 
   const selectedType = ticketTypes.find((t) => t.id === ticketTypeId)!;

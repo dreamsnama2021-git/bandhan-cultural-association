@@ -7,7 +7,7 @@ import { CalendarDays, MapPin, Clock, Users } from "lucide-react";
 import type { EventItem } from "@/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { eventVisuals } from "@/components/eventVisuals";
-import { getCurrentSessionMember } from "@/lib/credentials";
+import { getCurrentSessionMember, SESSION_CHANGE_EVENT } from "@/lib/credentials";
 import { freeTicketAllowance, freeTicketsUsed } from "@/lib/ticketBookings";
 
 export default function EventCard({ event, index = 0 }: { event: EventItem; index?: number }) {
@@ -16,11 +16,19 @@ export default function EventCard({ event, index = 0 }: { event: EventItem; inde
   // Signed-in members get free tickets for themselves + family members.
   const [free, setFree] = useState<{ remaining: number; familyCount: number } | null>(null);
   useEffect(() => {
-    const session = getCurrentSessionMember();
-    if (!session) return;
-    const familyCount = session.familyMembers.length;
-    const remaining = Math.max(0, freeTicketAllowance(familyCount) - freeTicketsUsed(session.email, event.id));
-    setFree({ remaining, familyCount });
+    const refresh = () => {
+      const session = getCurrentSessionMember();
+      if (!session) {
+        setFree(null);
+        return;
+      }
+      const familyCount = session.familyMembers.length;
+      const remaining = Math.max(0, freeTicketAllowance(familyCount) - freeTicketsUsed(session.email, event.id));
+      setFree({ remaining, familyCount });
+    };
+    refresh();
+    window.addEventListener(SESSION_CHANGE_EVENT, refresh);
+    return () => window.removeEventListener(SESSION_CHANGE_EVENT, refresh);
   }, [event.id]);
   const hasFree = !!free && free.remaining > 0;
 

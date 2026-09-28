@@ -16,11 +16,19 @@ const STORAGE_KEY = "bca_demo_credentials";
 const SESSION_KEY = "bca_demo_session_email";
 const ADMIN_SESSION_KEY = "bca_admin_session";
 
+// Fired whenever the signed-in member or their family changes, so components
+// that read the session once on mount (e.g. after the async Supabase sync) can refresh.
+export const SESSION_CHANGE_EVENT = "bca-session-change";
+function notifySessionChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(SESSION_CHANGE_EVENT));
+}
+
 export function saveCredential(cred: StoredCredential) {
   if (typeof window === "undefined") return;
   const all = readAllCredentials();
   const next = [...all.filter((c) => c.email.toLowerCase() !== cred.email.toLowerCase()), cred];
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  notifySessionChange();
 }
 
 export function readAllCredentials(): StoredCredential[] {
@@ -45,6 +53,7 @@ export function findCredential(email: string, password: string): StoredCredentia
 export function setCurrentSession(email: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(SESSION_KEY, email);
+  notifySessionChange();
 }
 
 export function getCurrentSessionMember(): StoredCredential | null {
@@ -72,6 +81,7 @@ export function clearAdminSession() {
 export function clearSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(SESSION_KEY);
+  notifySessionChange();
 }
 
 export function deleteCredential(email: string) {
@@ -101,4 +111,5 @@ export function updateFamilyMembers(email: string, familyMembers: FamilyMemberDe
       : c
   );
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  notifySessionChange();
 }
