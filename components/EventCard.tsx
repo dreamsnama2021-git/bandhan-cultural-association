@@ -1,14 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { CalendarDays, MapPin, Clock, Users } from "lucide-react";
 import type { EventItem } from "@/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { eventVisuals } from "@/components/eventVisuals";
+import { getCurrentSessionMember } from "@/lib/credentials";
+import { freeTicketAllowance, freeTicketsUsed } from "@/lib/ticketBookings";
 
 export default function EventCard({ event, index = 0 }: { event: EventItem; index?: number }) {
   const visual = eventVisuals[event.image] ?? eventVisuals.default;
+
+  // Signed-in members get free tickets for themselves + family members.
+  const [free, setFree] = useState<{ remaining: number; familyCount: number } | null>(null);
+  useEffect(() => {
+    const session = getCurrentSessionMember();
+    if (!session) return;
+    const familyCount = session.familyMembers.length;
+    const remaining = Math.max(0, freeTicketAllowance(familyCount) - freeTicketsUsed(session.email, event.id));
+    setFree({ remaining, familyCount });
+  }, [event.id]);
+  const hasFree = !!free && free.remaining > 0;
 
   return (
     <motion.div
@@ -51,14 +65,25 @@ export default function EventCard({ event, index = 0 }: { event: EventItem; inde
           {event.description}
         </p>
         <div className="mt-5 pt-5 border-t border-maroon-500/10 flex items-center justify-between">
-          <span className="font-display text-lg font-semibold text-charcoal">
-            {event.ticketPriceFrom > 0 ? `From ${formatCurrency(event.ticketPriceFrom)}` : "Free entry"}
-          </span>
+          {hasFree ? (
+            <span>
+              <span className="block font-display text-lg font-semibold text-emerald-700">
+                {free!.remaining} Free Ticket{free!.remaining === 1 ? "" : "s"}
+              </span>
+              <span className="block text-xs text-charcoal-light">
+                {free!.familyCount > 0 ? `You + ${free!.familyCount} family member${free!.familyCount === 1 ? "" : "s"}` : "For you"}
+              </span>
+            </span>
+          ) : (
+            <span className="font-display text-lg font-semibold text-charcoal">
+              {event.ticketPriceFrom > 0 ? `From ${formatCurrency(event.ticketPriceFrom)}` : "Free entry"}
+            </span>
+          )}
           <Link
             href={`/tickets/${event.id}`}
             className="text-sm font-semibold text-maroon-600 hover:text-maroon-700 focus-ring rounded"
           >
-            Buy Ticket &rarr;
+            {hasFree ? "Get Free Tickets" : "Buy Ticket"} &rarr;
           </Link>
         </div>
       </div>
