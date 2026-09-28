@@ -5,8 +5,8 @@
       "name": "bca-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000,
-      "autoPort": true
+      "port": 4300,
+      "autoPort": false
     }
   ]
 }

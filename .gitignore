@@ -35,5 +35,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# cloudflare / opennext build output
+.open-next
+.wrangler
+.dev.vars
+
 # claude code local session state
 .claude/scheduled_tasks.lock
