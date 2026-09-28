@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Gift, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import Container from "@/components/Container";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
@@ -10,13 +10,14 @@ import TicketCard from "@/components/TicketCard";
 import Checkout from "@/components/Checkout";
 import Confirmation from "@/components/Confirmation";
 import Button from "@/components/Button";
-import { formatCurrency, formatDate, generateOrderId, generateTransactionId, isValidEmail, isValidMobile } from "@/lib/utils";
+import { formatDate, generateOrderId, generateTransactionId, isValidEmail, isValidMobile } from "@/lib/utils";
 import { getCurrentSessionMember, SESSION_CHANGE_EVENT, type StoredCredential } from "@/lib/credentials";
 import { addTicketBooking, freeTicketAllowance, freeTicketsUsed } from "@/lib/ticketBookings";
 import { ticketTypesByEvent } from "@/data/events";
 import type { EventItem, PaymentResult, TicketTypeOption } from "@/types";
 
 const steps = ["Ticket Type", "Quantity", "Your Details", "Payment", "Confirmation"];
+const MEMBER_FREE_ID = "member-free";
 
 export default function TicketFlow({ event }: { event: EventItem }) {
   const ticketTypes: TicketTypeOption[] = useMemo(
@@ -43,7 +44,7 @@ export default function TicketFlow({ event }: { event: EventItem }) {
   const [session, setSession] = useState<StoredCredential | null>(null);
   const [freeRemaining, setFreeRemaining] = useState(0);
 
-  // A signed-in member gets 1 free ticket + 1 per family member (per event).
+  // A registered member gets 1 free ticket + 1 per family member (per event).
   useEffect(() => {
     const refresh = () => {
       const current = getCurrentSessionMember();
@@ -61,11 +62,31 @@ export default function TicketFlow({ event }: { event: EventItem }) {
     return () => window.removeEventListener(SESSION_CHANGE_EVENT, refresh);
   }, [event.id]);
 
-  const selectedType = ticketTypes.find((t) => t.id === ticketTypeId)!;
-  const freeQty = Math.min(quantity, freeRemaining);
-  const paidQty = quantity - freeQty;
-  const totalPrice = selectedType.price * paidQty;
-  const maxQuantity = freeRemaining + 10;
+  const hasFreeCard = !!session && freeRemaining > 0;
+
+  // The free member card comes first, and is preselected when it appears.
+  const memberFreeType: TicketTypeOption | null = useMemo(() => {
+    if (!session || freeRemaining <= 0) return null;
+    const family = session.familyMembers.length;
+    return {
+      id: MEMBER_FREE_ID,
+      name: "Registered Member",
+      price: 0,
+      description: `Free tickets for you${family > 0 ? ` + ${family} family member${family === 1 ? "" : "s"}` : ""}. No payment needed.`,
+      perks: [`${freeRemaining} free ticket${freeRemaining === 1 ? "" : "s"}`, "Event entry"],
+    };
+  }, [session, freeRemaining]);
+
+  useEffect(() => {
+    if (hasFreeCard) setTicketTypeId(MEMBER_FREE_ID);
+    else setTicketTypeId((id) => (id === MEMBER_FREE_ID ? ticketTypes[0].id : id));
+  }, [hasFreeCard, ticketTypes]);
+
+  const allTypes = memberFreeType ? [memberFreeType, ...ticketTypes] : ticketTypes;
+  const isFree = ticketTypeId === MEMBER_FREE_ID && !!memberFreeType;
+  const selectedType = allTypes.find((t) => t.id === ticketTypeId) ?? ticketTypes[0];
+  const ticketCount = isFree ? freeRemaining : quantity;
+  const totalPrice = isFree ? 0 : selectedType.price * quantity;
 
   const handleComplete = (res: PaymentResult) => {
     if (session) {
@@ -73,8 +94,8 @@ export default function TicketFlow({ event }: { event: EventItem }) {
         memberEmail: session.email,
         eventId: event.id,
         ticketTypeName: selectedType.name,
-        freeQuantity: freeQty,
-        paidQuantity: paidQty,
+        freeQuantity: isFree ? ticketCount : 0,
+        paidQuantity: isFree ? 0 : ticketCount,
         amount: res.amount,
         orderId: res.orderId,
       });
@@ -83,6 +104,7 @@ export default function TicketFlow({ event }: { event: EventItem }) {
     setStep(4);
   };
 
+  // Free member tickets skip quantity, details and payment entirely.
   const confirmFreeTickets = () =>
     handleComplete({
       orderId: generateOrderId(),
@@ -122,36 +144,27 @@ export default function TicketFlow({ event }: { event: EventItem }) {
               <div>
                 <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-6">Choose your ticket type</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {ticketTypes.map((t, i) => (
+                  {allTypes.map((t, i) => (
                     <TicketCard key={t.id} ticket={t} selected={ticketTypeId === t.id} onSelect={() => setTicketTypeId(t.id)} index={i} />
                   ))}
                 </div>
-                <Button className="mt-8" size="lg" onClick={() => setStep(1)}>Continue</Button>
+                {!session && (
+                  <p className="mt-5 text-sm text-charcoal-light">
+                    Registered members get free tickets for themselves and their family members.{" "}
+                    <a href="/login" className="font-semibold text-maroon-600 underline">Log in</a> to claim them.
+                  </p>
+                )}
+                {isFree ? (
+                  <Button className="mt-8" size="lg" onClick={confirmFreeTickets}>Get Free Tickets</Button>
+                ) : (
+                  <Button className="mt-8" size="lg" onClick={() => setStep(1)}>Continue</Button>
+                )}
               </div>
             )}
 
             {step === 1 && (
               <div>
                 <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-6">Select quantity</h2>
-                {session ? (
-                  <div className="mb-5 flex items-start gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-900">
-                    <Gift className="h-5 w-5 mt-0.5 shrink-0" />
-                    <p>
-                      Members get <strong>1 free ticket for themselves + 1 for each family member</strong> (you have{" "}
-                      {session.familyMembers.length} family member{session.familyMembers.length === 1 ? "" : "s"}).{" "}
-                      {freeRemaining > 0 ? (
-                        <>You have <strong>{freeRemaining} free ticket{freeRemaining === 1 ? "" : "s"}</strong> left for this event. Any extra tickets are paid.</>
-                      ) : (
-                        <>You have used all your free tickets for this event. Extra tickets are paid.</>
-                      )}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="mb-5 text-sm text-charcoal-light">
-                    Members get free tickets for themselves and their family members.{" "}
-                    <a href="/login" className="font-semibold text-maroon-600 underline">Log in</a> to claim them.
-                  </p>
-                )}
                 <div className="flex items-center gap-5 rounded-2xl bg-white/70 border border-maroon-500/10 p-6 max-w-xs">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -162,23 +175,13 @@ export default function TicketFlow({ event }: { event: EventItem }) {
                   </button>
                   <span className="font-display text-2xl font-bold text-charcoal w-8 text-center">{quantity}</span>
                   <button
-                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                    onClick={() => setQuantity((q) => Math.min(10, q + 1))}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-beige-light hover:bg-beige-dark focus-ring"
                     aria-label="Increase quantity"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                {session && (
-                  <div className="mt-4 max-w-xs text-sm text-charcoal-light space-y-1">
-                    <p>Free tickets: <strong className="text-emerald-700">{freeQty}</strong></p>
-                    <p>
-                      Paid tickets: <strong className="text-charcoal">{paidQty}</strong>
-                      {paidQty > 0 && <> &times; {formatCurrency(selectedType.price)}</>}
-                    </p>
-                    <p>Total: <strong className="text-maroon-500">{formatCurrency(totalPrice)}</strong></p>
-                  </div>
-                )}
                 <div className="mt-8 flex gap-3">
                   <Button variant="ghost" onClick={() => setStep(0)}>Back</Button>
                   <Button onClick={() => setStep(2)}>Continue</Button>
@@ -216,41 +219,41 @@ export default function TicketFlow({ event }: { event: EventItem }) {
             {step === 3 && (
               <div>
                 <h2 className="font-display text-2xl font-semibold text-maroon-500 mb-6">Complete your purchase</h2>
-                {totalPrice === 0 ? (
-                  <div className="rounded-2xl bg-beige-light border border-beige-dark p-6 max-w-md">
-                    <h3 className="font-display text-lg font-semibold text-maroon-500 mb-3">Free Tickets</h3>
-                    <p className="text-sm text-charcoal-light">
-                      {event.name} — {selectedType.name}
-                    </p>
-                    <p className="mt-1 text-sm text-charcoal-light">{quantity} free ticket(s) · {customer.name}</p>
-                    <p className="mt-4 font-display text-2xl font-bold text-maroon-500">{formatCurrency(0)}</p>
-                    <div className="mt-6 flex gap-3">
-                      <Button type="button" variant="ghost" onClick={() => setStep(2)}>Back</Button>
-                      <Button onClick={confirmFreeTickets}>Confirm Free Tickets</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Checkout
-                    summary={{
-                      itemLabel: `${event.name} — ${selectedType.name}`,
-                      itemDescription:
-                        freeQty > 0
-                          ? `${quantity} ticket(s): ${freeQty} free + ${paidQty} paid · ${customer.name}`
-                          : `${quantity} ticket(s) · ${customer.name}`,
-                      price: totalPrice,
-                    }}
-                    onComplete={handleComplete}
-                  />
-                )}
+                <Checkout
+                  summary={{
+                    itemLabel: `${event.name} — ${selectedType.name}`,
+                    itemDescription: `${quantity} ticket(s) · ${customer.name}`,
+                    price: totalPrice,
+                  }}
+                  onComplete={handleComplete}
+                />
               </div>
             )}
 
             {step === 4 && result && (
               <Confirmation
                 result={result}
-                title="Tickets Confirmed"
-                message={`${quantity} ticket(s) for ${event.name} have been booked${freeQty > 0 ? ` (${freeQty} free, ${paidQty} paid)` : ""}. A confirmation has been sent to ${customer.email}.`}
-              />
+                title={isFree ? "Free Tickets Confirmed" : "Tickets Confirmed"}
+                message={
+                  isFree
+                    ? `${ticketCount} free ticket${ticketCount === 1 ? "" : "s"} for ${event.name} have been booked for you and your family.`
+                    : `${quantity} ticket(s) for ${event.name} have been booked. A confirmation has been sent to ${customer.email}.`
+                }
+              >
+                {isFree && session && (
+                  <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 text-left text-sm text-emerald-900">
+                    <p className="font-semibold mb-2">Admit</p>
+                    <ul className="space-y-1">
+                      <li>1. {session.member.fullName} (Member)</li>
+                      {session.familyMembers.map((f, i) => (
+                        <li key={f.id ?? i}>
+                          {i + 2}. {f.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Confirmation>
             )}
           </div>
         </Container>

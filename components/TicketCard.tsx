@@ -44,7 +44,7 @@ export default function TicketCard({
           {selected && <Check className="h-4 w-4 text-charcoal" />}
         </span>
       </div>
-      <p className="mt-4 font-display text-2xl font-bold text-charcoal">{formatCurrency(ticket.price)}</p>
+      <p className="mt-4 font-display text-2xl font-bold text-charcoal">{ticket.price === 0 ? "Free" : formatCurrency(ticket.price)}</p>
       <ul className="mt-3 space-y-1.5">
         {ticket.perks.map((p) => (
           <li key={p} className="text-xs text-charcoal-light flex items-center gap-1.5">

@@ -39,8 +39,14 @@ export default function Confirmation({
         <Row label="Order ID" value={result.orderId} />
         <Row label="Transaction ID" value={result.transactionId} />
         <Row label="Date" value={formatDate(result.date)} />
-        <Row label="Amount Paid" value={formatCurrency(result.amount)} />
-        <Row label="Payment Method" value={result.method.toUpperCase()} />
+        {result.method === "free" ? (
+          <Row label="Amount" value="Free (Member Benefit)" />
+        ) : (
+          <>
+            <Row label="Amount Paid" value={formatCurrency(result.amount)} />
+            <Row label="Payment Method" value={result.method.toUpperCase()} />
+          </>
+        )}
         <Row label="Status" value="Confirmed" success />
       </div>
 
